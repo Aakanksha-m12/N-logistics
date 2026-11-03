@@ -1,8 +1,8 @@
-\# N-Logistics Management System
+< N-Logistics Management System
 
 
 
-\## About the Project
+<< About the Project
 
 
 
@@ -18,7 +18,7 @@ The application is developed using Java web technologies and MySQL for database 
 
 
 
-\## My Contribution
+<< My Contribution
 
 
 
@@ -34,7 +34,7 @@ I worked on implementing role-based authorization so that users can access only 
 
 
 
-\## Roles in the Application
+<< Roles in the Application
 
 
 
@@ -54,7 +54,7 @@ The application includes the following user roles:
 
 
 
-\## Features
+<< Features
 
 
 
@@ -84,7 +84,7 @@ Some of the main functionalities available in the application are:
 
 
 
-\## Technologies Used
+<< Technologies Used
 
 
 
@@ -108,7 +108,7 @@ Some of the main functionalities available in the application are:
 
 
 
-\## What I Learned
+<< What I Learned
 
 
 
@@ -124,7 +124,7 @@ Since this was a group project, it also helped me understand the importance of t
 
 
 
-\## Project Note
+<< Project Note
 
 
 
