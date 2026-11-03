@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<web-app
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+    xsi:schemaLocation="
+        http://xmlns.jcp.org/xml/ns/javaee
+        http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+    id="WebApp_ID"
+    version="3.1">
+
+    <display-name>NLogisticsModule3</display-name>
+
+
+    <!-- =========================================================
+         MODULE 3 SSO SHARED SECRET
+         ========================================================= -->
+
+    <context-param>
+
+        <param-name>
+            module3SharedSecret
+        </param-name>
+
+        <param-value>
+            NLogistics_Module3_SSO_2026_SECRET_ChangeMe
+        </param-value>
+
+    </context-param>
+
+
+    <!-- =========================================================
+         MODULE 1 LOGOUT URL
+         
+         IMPORTANT:
+         Both applications are running on Tomcat port 8081.
+         Therefore Module 3 sends logout to Module 1 on 8081.
+         ========================================================= -->
+
+    <context-param>
+
+        <param-name>
+            module1LogoutUrl
+        </param-name>
+
+        <param-value>
+            http://localhost:8081/NLogisticsImportExport/app?action=logout
+        </param-value>
+
+    </context-param>
+
+
+    <!-- =========================================================
+         SESSION CONFIGURATION
+         ========================================================= -->
+
+    <session-config>
+
+        <session-timeout>
+            30
+        </session-timeout>
+
+        <cookie-config>
+
+            <http-only>
+                true
+            </http-only>
+
+        </cookie-config>
+
+        <tracking-mode>
+            COOKIE
+        </tracking-mode>
+
+    </session-config>
+
+
+    <!-- =========================================================
+         WELCOME FILE
+         ========================================================= -->
+
+    <welcome-file-list>
+
+        <welcome-file>
+            index.html
+        </welcome-file>
+
+        <welcome-file>
+            index.htm
+        </welcome-file>
+
+        <welcome-file>
+            index.jsp
+        </welcome-file>
+
+        <welcome-file>
+            default.html
+        </welcome-file>
+
+        <welcome-file>
+            default.htm
+        </welcome-file>
+
+        <welcome-file>
+            default.jsp
+        </welcome-file>
+
+    </welcome-file-list>
+
+
+</web-app>

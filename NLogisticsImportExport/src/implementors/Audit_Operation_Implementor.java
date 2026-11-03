@@ -1,0 +1,6 @@
+package implementors;
+import db_config.GetConnection; import operations.AuditOperations; import model.AuditLog; import java.sql.*; import java.util.*;
+public class Audit_Operation_Implementor implements AuditOperations {
+ public List<AuditLog> getAuditLog(int actor)throws SQLException{List<AuditLog> out=new ArrayList<>();try(Connection c=GetConnection.getConnection();CallableStatement s=c.prepareCall("{call sp_get_audit_log(?)}")){s.setInt(1,actor);try(ResultSet r=s.executeQuery()){while(r.next()){AuditLog a=new AuditLog();a.setLogId(r.getLong("log_id"));int uid=r.getInt("user_id");a.setUserId(r.wasNull()?null:uid);a.setUsername(r.getString("username"));a.setAction(r.getString("action"));a.setEntityName(r.getString("entity_name"));a.setEntityId(r.getString("entity_id"));a.setOldValue(r.getString("old_value"));a.setNewValue(r.getString("new_value"));a.setIpAddress(r.getString("ip_address"));a.setTimestamp(String.valueOf(r.getTimestamp("timestamp")));out.add(a);}}}return out;}
+ public void logPermissionDenied(int uid,String entity,String entityId,String action,String ip)throws SQLException{try(Connection c=GetConnection.getConnection();CallableStatement s=c.prepareCall("{call sp_log_permission_denied(?,?,?,?,?)}")){s.setInt(1,uid);s.setString(2,entity);s.setString(3,entityId);s.setString(4,action);s.setString(5,ip);s.execute();}}
+}

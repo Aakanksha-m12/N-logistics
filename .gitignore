@@ -1,0 +1,24 @@
+# ---- Build output ----
+build/
+bin/
+out/
+target/
+*.class
+
+# ---- Packaged artifacts (rebuild, never commit) ----
+*.war
+*.ear
+
+# ---- Eclipse workspace ----
+.settings/
+.metadata/
+
+# ---- OS junk ----
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# ---- Local config / secrets ----
+.env
+*.local
+db.properties

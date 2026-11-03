@@ -1,0 +1,6 @@
+database name emp_w
+table emp
+add_emp update_emp delete_emp show_emp
+"com.mysql.cj.jdbc.Driver"
+"jdbc:mysql://localhost:3306/emp","root" ,""
+				   

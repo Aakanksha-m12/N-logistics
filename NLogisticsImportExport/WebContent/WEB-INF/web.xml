@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+         <context-param>
+    <param-name>module3SharedSecret</param-name>
+    <param-value>NLogistics_Module3_SSO_2026_SECRET_ChangeMe</param-value>
+    </context-param>
+    <context-param>
+    <param-name>module3Url</param-name>
+    <param-value>http://localhost:8081/NLogisticsModule3/module3-sso</param-value>
+    </context-param>
+    <display-name>N Logistics Module 1</display-name>
+    <session-config>
+        <session-timeout>30</session-timeout>
+        <cookie-config>
+            <http-only>true</http-only>
+        </cookie-config>
+        <tracking-mode>COOKIE</tracking-mode>
+    </session-config>
+    <welcome-file-list>
+        <welcome-file>app</welcome-file>
+    </welcome-file-list>
+</web-app>
