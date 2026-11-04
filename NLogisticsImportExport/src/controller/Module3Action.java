@@ -13,9 +13,6 @@ import javax.servlet.http.HttpSession;
 
 public class Module3Action implements Action {
 
-    private static final String DEFAULT_SECRET =
-            "NLogistics_Module3_SSO_2026_SECRET_ChangeMe";
-
     private static final String DEFAULT_MODULE3_URL =
             "http://localhost:8081/NLogisticsModule3/module3-sso";
 
@@ -95,17 +92,30 @@ public class Module3Action implements Action {
                 + nonce;
 
         /*
-         * Read shared secret from Module 1 web.xml.
+         * Read the shared secret from the environment first, then fall
+         * back to web.xml. The two applications must agree on this value.
          */
         String sharedSecret =
-                req.getServletContext()
-                        .getInitParameter(
-                                "module3SharedSecret");
+                System.getenv("NLOGISTICS_SSO_SECRET");
 
         if (sharedSecret == null ||
                 sharedSecret.trim().isEmpty()) {
 
-            sharedSecret = DEFAULT_SECRET;
+            sharedSecret =
+                    req.getServletContext()
+                            .getInitParameter(
+                                    "module3SharedSecret");
+        }
+
+        /*
+         * Fail closed rather than falling back to a value that is
+         * published in source control.
+         */
+        if (sharedSecret == null ||
+                sharedSecret.trim().isEmpty()) {
+
+            throw new SecurityException(
+                    "SSO shared secret is not configured.");
         }
 
         /*

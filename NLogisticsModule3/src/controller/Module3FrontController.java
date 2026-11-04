@@ -82,7 +82,7 @@ public class Module3FrontController extends HttpServlet {
                         module1LogoutUrl.trim().isEmpty()) {
 
                     module1LogoutUrl =
-                            "http://localhost:8080/"
+                            "http://localhost:8081/"
                             + "NLogisticsImportExport/"
                             + "app?action=logout";
                 }
@@ -136,7 +136,7 @@ public class Module3FrontController extends HttpServlet {
                         module1LogoutUrl.trim().isEmpty()) {
 
                     module1LogoutUrl =
-                            "http://localhost:8080/"
+                            "http://localhost:8081/"
                             + "NLogisticsImportExport/"
                             + "app?action=logout";
                 }

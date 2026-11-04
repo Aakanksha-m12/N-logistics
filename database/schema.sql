@@ -586,6 +586,71 @@ DELIMITER ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ZERO_IN_DATE,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION' */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_get_companies_for_management` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = cp850 */ ;
+/*!50003 SET character_set_results = cp850 */ ;
+/*!50003 SET collation_connection  = cp850_general_ci */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_companies_for_management`(
+    IN p_super_admin_id INT
+)
+BEGIN
+    DECLARE v_role_name VARCHAR(50);
+    DECLARE v_status VARCHAR(20);
+
+    IF p_super_admin_id IS NULL
+       OR p_super_admin_id <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid Super Admin ID';
+    END IF;
+
+    SELECT
+        r.role_name,
+        u.status
+    INTO
+        v_role_name,
+        v_status
+    FROM users u
+    JOIN roles r
+        ON u.role_id = r.role_id
+    WHERE u.user_id = p_super_admin_id;
+
+    IF v_role_name IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User does not exist';
+    END IF;
+
+    IF v_role_name <> 'Super Admin'
+       OR v_status <> 'Active' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT =
+            'Only an Active Super Admin can view companies';
+    END IF;
+
+    SELECT
+        company_id,
+        company_name,
+        license_no,
+        gst_no,
+        tin_no,
+        address,
+        contact_email,
+        contact_phone,
+        approval_status,
+        created_at
+    FROM companies
+    ORDER BY created_at ASC;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ZERO_IN_DATE,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION' */ ;
 /*!50003 DROP PROCEDURE IF EXISTS `sp_get_company_users` */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -2078,4 +2143,20 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-11-03 22:48:10
+-- Dump completed on 2026-11-04 16:19:39
+
+-- ---------------------------------------------------------------------------
+-- Reference data: application roles
+--
+-- These rows are required, not sample data. The stored procedures look roles
+-- up by name (for example sp_register_customer requires 'Customer / Consumer')
+-- and the application maps them to internal role constants. The spelling has
+-- to match exactly.
+-- ---------------------------------------------------------------------------
+
+INSERT IGNORE INTO `roles` (`role_name`, `description`) VALUES
+  ('Super Admin',             'Platform administrator, approves companies'),
+  ('Company Admin',           'Manages a single company and its users'),
+  ('Company Staff Operations','Handles container operations and allocation'),
+  ('Company Staff Finance',   'Handles pricing and finance review'),
+  ('Customer / Consumer',     'Views their own containers and final prices');

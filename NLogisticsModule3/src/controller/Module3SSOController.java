@@ -101,15 +101,28 @@ public class Module3SSOController extends HttpServlet {
              */
 
             String sharedSecret =
-                    getServletContext()
-                            .getInitParameter(
-                                    "module3SharedSecret");
+                    System.getenv("NLOGISTICS_SSO_SECRET");
 
             if (sharedSecret == null ||
                     sharedSecret.trim().isEmpty()) {
 
                 sharedSecret =
-                        "NLogistics_Module3_SSO_2026_SECRET_ChangeMe";
+                        getServletContext()
+                                .getInitParameter(
+                                        "module3SharedSecret");
+            }
+
+            /*
+             * Fail closed. Without a secret the signature cannot be
+             * trusted, so refuse the request instead of falling back
+             * to a value that is published in source control.
+             */
+
+            if (sharedSecret == null ||
+                    sharedSecret.trim().isEmpty()) {
+
+                throw new SecurityException(
+                        "SSO shared secret is not configured.");
             }
 
 

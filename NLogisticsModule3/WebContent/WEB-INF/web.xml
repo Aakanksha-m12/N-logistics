@@ -14,19 +14,11 @@
 
     <!-- =========================================================
          MODULE 3 SSO SHARED SECRET
+
+         Read from the NLOGISTICS_SSO_SECRET environment variable.
+         It must be identical to the value used by Module 1 and is
+         never stored in this file.
          ========================================================= -->
-
-    <context-param>
-
-        <param-name>
-            module3SharedSecret
-        </param-name>
-
-        <param-value>
-            NLogistics_Module3_SSO_2026_SECRET_ChangeMe
-        </param-value>
-
-    </context-param>
 
 
     <!-- =========================================================

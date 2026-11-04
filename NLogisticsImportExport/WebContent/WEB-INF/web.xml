@@ -3,10 +3,11 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
          version="3.1">
-         <context-param>
-    <param-name>module3SharedSecret</param-name>
-    <param-value>NLogistics_Module3_SSO_2026_SECRET_ChangeMe</param-value>
-    </context-param>
+         <!--
+              The Module 3 SSO shared secret is read from the
+              NLOGISTICS_SSO_SECRET environment variable. It must be
+              identical in both applications and is never stored here.
+         -->
     <context-param>
     <param-name>module3Url</param-name>
     <param-value>http://localhost:8081/NLogisticsModule3/module3-sso</param-value>

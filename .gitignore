@@ -22,3 +22,7 @@ desktop.ini
 .env
 *.local
 db.properties
+setenv.bat
+setenv.sh
+*.jks
+*.p12
