@@ -1,142 +1,236 @@
 # N-Logistics
 
-A logistics management system built with Java Servlets, JSP and MySQL. It was a
-group project during my internship and I worked on Module 3, including the
-role-based access control.
+A Java-based logistics management system designed to manage company operations, users, container allocation, pricing and access permissions.
 
-## What it is
+This project was developed as part of a group internship project. My contribution focused on **Module 3 and its Role-Based Access Control (RBAC) implementation**.
 
-The system covers the usual logistics company work. Companies register and wait
-to be approved, staff members are given roles, and containers go through
-allocation, pricing and forecasting.
+---
 
-It runs as two web applications on the same Tomcat server:
+## About the Project
 
-| App | Folder | Handles |
-|---|---|---|
-| Module 1 | `NLogisticsImportExport` | Login, company approval, users and roles, audit log, password reset |
-| Module 3 | `NLogisticsModule3` | Containers, allocation, pricing, pricing audit, forecasting, RBAC |
+N-Logistics is a web-based logistics management application consisting of two web modules deployed on an Apache Tomcat server.
 
-Module 1 does the login. After signing in it creates a signed token and sends the
-browser to Module 3, which checks the signature before starting its own session.
-The two applications do not share a session cookie.
+The system provides functionality for company management, user administration, container operations, allocation, pricing and demand forecasting.
 
-## What I built
+The application uses Java Servlets, JSP and MySQL/MariaDB for its backend and database operations.
 
-Module 3 and the authorization layer that protects it.
+## Project Modules
 
-The authorization lives in `Module3Authorization.java`. Every feature has one
-guard method that runs on the server before the controller touches the database:
+| Module | Main Responsibilities |
+|---|---|
+| Module 1 – Import Export | Login, company registration and approval, user management, roles, audit logging and password reset |
+| Module 3 – Logistics Management | Container management, allocation, pricing, pricing audit, demand forecasting and RBAC |
 
-```java
-public static void requireContainerManagement(HttpSession session) {
-    requireAnyRole(session, ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN);
-}
+Both modules work as separate web applications and communicate through a signed Single Sign-On (SSO) token.
+
+## Features
+
+### Authentication and User Management
+- User login and session management
+- Company registration and approval
+- User and role management
+- Password reset functionality
+- Role-based access permissions
+
+### Container Management
+- Container catalogue
+- Add, update and delete container records
+- Container status management
+- Container ownership management
+- Container image upload functionality
+
+### Allocation Management
+- Container allocation and release
+- Company-based access restrictions
+- Separate allocation and release workflows
+
+### Pricing Management
+- Container pricing operations
+- Pricing rules
+- Pricing audit records
+- Configurable pricing surcharge
+
+### Demand Forecasting
+- Demand forecasting functionality
+- Forecast records stored in the database
+
+### Security
+- Role-Based Access Control (RBAC)
+- Server-side authorization checks
+- CSRF protection for POST requests
+- BCrypt password hashing
+- Session timeout handling
+- Signed SSO token verification
+- Permission-denial logging
+
+## My Contribution
+
+This was a group project, and my primary contribution was **Module 3 and its authorization layer**.
+
+My work included:
+
+- Implementing Role-Based Access Control.
+- Restricting features according to user roles.
+- Implementing server-side authorization checks.
+- Applying company-level access restrictions.
+- Working with container management and allocation functionality.
+- Working with pricing and pricing audit functionality.
+- Integrating authorization checks with the Module 3 controllers.
+
+The authorization implementation is located in:
+
+`NLogisticsModule3/src`
+
+The main authorization class is:
+
+`Module3Authorization.java`
+
+## Role-Based Access Control
+
+The system supports the following roles:
+
+| Role | Access |
+|---|---|
+| Super Admin | Overall system management |
+| Company Admin | Company operations and user management |
+| Operations Staff | Container operations and allocation |
+| Finance Staff | Pricing and pricing audit |
+| Customer | Own container information and final pricing |
+
+Authorization is checked on the server side rather than relying only on whether a button or link is visible in the interface.
+
+Company-specific operations use the authenticated user's company context.
+
+## Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| Java 8 | Backend programming |
+| Java Servlets | Request handling |
+| JSP | Dynamic web pages |
+| JDBC | Database connectivity |
+| MySQL / MariaDB | Database |
+| Apache Tomcat 8.5 | Application server |
+| HTML, CSS, JavaScript | Frontend |
+| Bootstrap 5 | UI styling |
+| BCrypt / jBCrypt | Password hashing |
+| Eclipse IDE | Development environment |
+| Git and GitHub | Version control |
+
+## Project Structure
+
+```text
+N-logistics/
+│
+├── NLogisticsImportExport/
+│   ├── src/
+│   └── WebContent/
+│
+├── NLogisticsModule3/
+│   ├── src/
+│   └── WebContent/
+│
+├── database/
+│   ├── schema.sql
+│   └── seed.sql
+│
+├── config/
+│   └── setenv.example.bat
+│
+├── README.md
+├── LICENSE
+└── .gitignore
 ```
 
-Company scoping works the same way. Staff get their `companyId` from the session,
-not from a form field, so changing a request parameter does not give access to
-another company's data.
+## Database Setup
 
-I also added CSRF tokens to every POST, session timeout handling, and permission
-logging in Module 1.
+The project uses a database named:
 
-## Roles
+`logistics_db`
 
-| Role | What they do |
-|---|---|
-| Super Admin | Approves companies, sees everything |
-| Company Admin | Runs their own company and users |
-| Operations Staff | Containers and allocation |
-| Finance Staff | Pricing and pricing audit |
-| Customer | Sees their own containers and final price |
+Create the database:
 
-Access is checked in Java, not just hidden in the JSP. This is what
-`Module3Authorization` actually enforces:
+```sql
+CREATE DATABASE logistics_db;
+```
 
-| Feature | Super Admin | Company Admin | Operations | Finance | Customer |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Container catalogue | Yes | Yes | Yes | Yes | Own only |
-| Add / edit / delete containers | Yes | Yes | - | - | - |
-| Allocation and release | Yes | Yes | Yes | - | - |
-| Pricing | Yes | Yes | - | Yes | Final price |
-| Pricing rules | Yes | Yes | - | - | - |
-| Pricing audit | Yes | Yes | - | Yes | - |
-| Demand forecast | Yes | Yes | - | - | - |
-
-## Security notes
-
-- Passwords are hashed with BCrypt (cost 12) and checked with `BCrypt.checkpw`.
-  The database also rejects any value that is not a valid BCrypt hash.
-- CSRF tokens are per session and checked in the front controller before any
-  action runs.
-- Session cookies are HttpOnly, sessions expire after 30 minutes, and a fresh
-  session is created after login so session fixation does not work.
-- The SSO token is signed with HMAC-SHA256 and expires after 5 minutes.
-- Module 1 writes permission denials to the audit log with the user, the action,
-  the IP address and a timestamp. Module 3 keeps a separate audit trail for
-  pricing changes.
-- Credentials and secrets come from environment variables. Nothing sensitive is
-  committed to this repository.
-
-## Tech
-
-Java 8, Servlets 3.1, JSP, JDBC, MySQL 8 / MariaDB 10.4, Tomcat 8.5, Eclipse,
-Bootstrap 5, jBCrypt.
-
-## Running it
-
-You need JDK 8, Tomcat 8.5, MySQL 8 or MariaDB, and Eclipse for Enterprise Java
-Developers.
+Import the database structure:
 
 ```bash
-mysql -u root -p -e "CREATE DATABASE logistics_db"
 mysql -u root -p logistics_db < database/schema.sql
+```
+
+For local development, optional demo data can be inserted using:
+
+```bash
 mysql -u root -p logistics_db < database/seed.sql
 ```
 
-`seed.sql` is optional. It creates a demo Super Admin so you have something to
-log in with.
+The seed file creates a development Super Admin account for local testing only.
 
-Next, copy `config/setenv.example.bat` to `<TOMCAT_HOME>\bin\setenv.bat` and
-fill in your values. The SSO secret has to be the same for both applications.
+**Security note:** The demo credentials are publicly available in the development seed file. Do not use this account or its password in a production environment.
 
-Import both projects into Eclipse, deploy Module 1 first and then Module 3, and
-open <http://localhost:8081/NLogisticsImportExport/>.
+## Application Configuration
 
-If you ran `seed.sql`, the login is `superadmin` / `Admin@12345`. That account is
-for local testing only.
+A sample configuration file is provided:
 
-## Configuration
+`config/setenv.example.bat`
 
-| Variable | Needed | Default |
-|---|---|---|
-| `NLOGISTICS_SSO_SECRET` | Yes | none |
-| `NLOGISTICS_DB_URL` | No | `jdbc:mysql://localhost:3306/logistics_db` |
-| `NLOGISTICS_DB_USER` | No | `root` |
-| `NLOGISTICS_DB_PASSWORD` | No | empty |
-| `NLOGISTICS_SMTP_HOST` | No | none |
-| `NLOGISTICS_SMTP_PORT` | No | none |
-| `NLOGISTICS_SMTP_USER` | No | none |
-| `NLOGISTICS_SMTP_PASS` | No | none |
-| `NLOGISTICS_SMTP_FROM` | No | none |
+Copy this file to the Tomcat `bin` directory and rename the copy to:
 
-Without the SMTP settings, password reset codes are printed to the Tomcat
-console instead of being emailed.
+`setenv.bat`
 
-## Known issues
+Update the environment variables with your local database credentials and SSO secret.
 
-- No automated tests. Everything was checked by hand in the browser.
-- Business logic is split between Java and MySQL stored procedures, which makes
-  it harder to follow than a single-layer design.
-- `ContainerController` is around 1400 lines and several JSPs carry their own
-  styling.
-- Module 2 of the original project is not in this repository.
-- `schema.sql` is structure only. The role rows are included because the stored
-  procedures need them, but there are no user accounts until you run `seed.sql`.
+The same SSO secret must be configured for both web applications.
 
-## Note
+Do not commit your actual `setenv.bat` file or any real credentials.
 
-This is an internship group project. My part was Module 3 and the RBAC
-implementation. I put it here to keep a record of what I built and what I
-learned.
+## Running the Project
+
+### Prerequisites
+
+- JDK 8
+- Apache Tomcat 8.5
+- MySQL 8 or MariaDB 10.4
+- Eclipse IDE for Enterprise Java Developers
+
+### Setup
+
+1. Clone this repository.
+2. Configure the database using the SQL files in the `database` folder.
+3. Configure the required environment variables in Tomcat.
+4. Import both web projects into Eclipse.
+5. Configure Apache Tomcat in Eclipse.
+6. Deploy both applications to Tomcat.
+7. Start Module 1 first.
+8. Open the Module 1 application and log in.
+9. Access Module 3 through the application's navigation.
+
+The configured local Module 1 URL in the project documentation is:
+
+`http://localhost:8081/NLogisticsImportExport/`
+
+The port may need to be adjusted to match your local Tomcat configuration.
+
+## Screenshots
+
+Application screenshots will be added here after capturing and verifying the running application.
+
+## Current Limitations
+
+- The repository contains Module 1 and Module 3; Module 2 is not included.
+- Automated test coverage is not currently included.
+- Some business logic is implemented through MySQL stored procedures.
+- The supplied database schema does not include a complete port and route master-data module.
+
+## Project Information
+
+**Project:** N-Logistics  
+**Project Type:** Group Internship Project  
+**My Contribution:** Module 3 and Role-Based Access Control  
+**Development Environment:** Eclipse IDE
+
+---
+
+Thank you for visiting the project repository.

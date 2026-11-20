@@ -1,28 +1,42 @@
-# ---- Build output ----
+# Java build files
 build/
 bin/
 out/
 target/
 *.class
 
-# ---- Packaged artifacts (rebuild, never commit) ----
+# Packaged applications
 *.war
 *.ear
 
-# ---- Eclipse workspace ----
+# Eclipse workspace
 .settings/
 .metadata/
 
-# ---- OS junk ----
+# IDE
+.idea/
+.vscode/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Operating system
 Thumbs.db
 desktop.ini
 .DS_Store
 
-# ---- Local config / secrets ----
+# Local credentials and configuration
 .env
+.env.*
 *.local
 db.properties
 setenv.bat
 setenv.sh
 *.jks
 *.p12
+
+# Backups
+*.bak
+*.backup
