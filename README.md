@@ -215,7 +215,91 @@ The port may need to be adjusted to match your local Tomcat configuration.
 
 ## Screenshots
 
-Application screenshots will be added here after capturing and verifying the running application.
+## Screenshots
+
+The following screenshots demonstrate the application's user interface and major functionalities.
+
+### 1. Authentication
+
+The login interface used to access the N-Logistics application.
+
+![Login Page](screenshots/login.png)
+
+### 2. Dashboard
+
+The dashboards provide an overview of the application's available operations and management features.
+
+**Main Dashboard**
+
+![Dashboard Overview](screenshots/dashboard1.png)
+
+**Additional Dashboard View**
+
+![Dashboard Details](screenshots/dashboard2.png)
+
+### 3. Container Management
+
+Container management functionality, including viewing and adding container records.
+
+**Container Management**
+
+![Container Management](screenshots/container_management.png)
+
+**Add Container**
+
+![Add Container](screenshots/add_container.png)
+
+### 4. Container Allocation and Release
+
+The allocation module supports container allocation and release operations.
+
+**Customer Container Allocation**
+
+![Customer Container Allocation](screenshots/customer_container_allocatio.png)
+
+**Release Container**
+
+![Release Container](screenshots/release_container.png)
+
+### 5. Pricing Management
+
+Pricing rules and pricing audit functionality.
+
+**Pricing Rules**
+
+![Pricing Rules](screenshots/pricing_rules.png)
+
+**Pricing Audit**
+
+![Pricing Audit](screenshots/pricing_audit.png)
+
+### 6. Demand Forecasting
+
+The demand forecasting interface provides a view of the application's forecasting functionality.
+
+**Forecast View 1**
+
+![Demand Forecast 1](screenshots/demand_forecast1.png)
+
+**Forecast View 2**
+
+![Demand Forecast 2](screenshots/demand_forecast2.png)
+
+### 7. Customer Portal
+
+Customer-facing dashboard and pricing information.
+
+**Customer Dashboard**
+
+![Customer Dashboard](screenshots/customer_dashboard.png)
+
+**Additional Customer Dashboard View**
+
+![Customer Dashboard Details](screenshots/customer_dashboard2.png)
+
+**Customer Pricing**
+
+![Customer Pricing](screenshots/customer_price.png)
 
 ## Current Limitations
 
