@@ -92,8 +92,8 @@ public class PricingAuditController extends HttpServlet {
                 } else {
 
                     /*
-                     * Company Admin and Finance Staff should see
-                     * only their own company's audit information.
+                     * Company Admin and Finance Staff see only their
+                     * own company's audit information.
                      *
                      * companyId comes from the authenticated session.
                      * It is NEVER taken from the request.
@@ -107,17 +107,10 @@ public class PricingAuditController extends HttpServlet {
                         );
                     }
 
-                    /*
-                     * The current service has no company-filtered
-                     * audit method, so we do not expose another
-                     * company's audit information here.
-                     *
-                     * This part will be connected to the final
-                     * company-filtered service/implementor logic
-                     * before production testing.
-                     */
                     audits =
-                            service.getAllPricingAudits(userId);
+                            service.getPricingAuditsByCompany(
+                                    userId,
+                                    companyId);
 
                     request.setAttribute(
                             "companyId",

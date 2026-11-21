@@ -644,7 +644,7 @@ body {
                             <td>
 
                                 <span class="username">
-                                    <%=u.getUsername()%>
+                                    <%=controller.Html.escape(u.getUsername())%>
                                 </span>
 
                             </td>
@@ -655,7 +655,7 @@ body {
                             <td>
 
                                 <span class="user-email">
-                                    <%=u.getEmail()%>
+                                    <%=controller.Html.escape(u.getEmail())%>
                                 </span>
 
                             </td>
@@ -666,7 +666,7 @@ body {
                             <td>
 
                                 <span class="user-role">
-                                    <%=u.getRoleName()%>
+                                    <%=controller.Html.escape(u.getRoleName())%>
                                 </span>
 
                             </td>
@@ -685,7 +685,7 @@ body {
                                 <% } else { %>
 
                                     <span class="status-badge status-other">
-                                        <%=u.getStatus()%>
+                                        <%=controller.Html.escape(u.getStatus())%>
                                     </span>
 
                                 <% } %>

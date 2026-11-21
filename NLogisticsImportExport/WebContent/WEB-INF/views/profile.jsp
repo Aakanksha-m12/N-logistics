@@ -581,7 +581,7 @@
                         </div>
 
                         <div class="meta-value">
-                            <%=u.getUsername()%>
+                            <%=controller.Html.escape(u.getUsername())%>
                         </div>
 
                     </div>
@@ -594,7 +594,7 @@
                         </div>
 
                         <div class="meta-value">
-                            <%=u.getRoleName()%>
+                            <%=controller.Html.escape(u.getRoleName())%>
                         </div>
 
                     </div>
@@ -609,7 +609,7 @@
                         <div class="meta-value">
 
                             <span class="status-value">
-                                <%=u.getStatus()%>
+                                <%=controller.Html.escape(u.getStatus())%>
                             </span>
 
                         </div>
@@ -678,7 +678,7 @@
                                class="form-control"
                                type="email"
                                name="email"
-                               value="<%=u.getEmail()%>"
+                               value="<%=controller.Html.escape(u.getEmail())%>"
                                placeholder="Email"
                                autocomplete="email"
                                required>
@@ -696,7 +696,7 @@
                         <input id="phone"
                                class="form-control"
                                name="phone"
-                               value="<%=u.getPhone() == null ? "" : u.getPhone()%>"
+                               value="<%=controller.Html.escape(u.getPhone())%>"
                                placeholder="Phone"
                                autocomplete="tel">
 

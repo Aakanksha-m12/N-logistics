@@ -1845,7 +1845,7 @@
 
         <div class="nl-sidebar-user-role">
 
-            <%= session.getAttribute("roleName") %>
+            <%= controller.Html.escape(session.getAttribute("roleName")) %>
 
         </div>
 
@@ -1855,7 +1855,7 @@
              ================================================= -->
 
         <form
-            method="get"
+            method="post"
             action="<%= request.getContextPath() %>/app"
             class="nl-logout-form">
 
@@ -1863,6 +1863,11 @@
                 type="hidden"
                 name="action"
                 value="logout">
+
+            <input
+                type="hidden"
+                name="_csrf"
+                value="<%= session.getAttribute("csrfToken") %>">
 
 
             <button
@@ -1941,13 +1946,13 @@
 
                 <div class="nl-user-name">
 
-                    <%= session.getAttribute("username") %>
+                    <%= controller.Html.escape(session.getAttribute("username")) %>
 
                 </div>
 
                 <div class="nl-user-role">
 
-                    <%= session.getAttribute("roleName") %>
+                    <%= controller.Html.escape(session.getAttribute("roleName")) %>
 
                 </div>
 
@@ -1972,7 +1977,7 @@
 
             <div class="nl-avatar">
 
-                <%= initial %>
+                <%= controller.Html.escape(initial) %>
 
             </div>
 
@@ -2046,7 +2051,7 @@
 
                 <span class="nl-role-square"></span>
 
-                <%= session.getAttribute("roleName") %>
+                <%= controller.Html.escape(session.getAttribute("roleName")) %>
 
             </div>
 

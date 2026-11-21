@@ -1,8 +1,14 @@
 package controller;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.List;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -16,6 +22,9 @@ import model.Container;
 public class Module3FrontController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
+
+    private static final SecureRandom RANDOM =
+            new SecureRandom();
 
     private Module3Service service;
 
@@ -73,22 +82,14 @@ public class Module3FrontController extends HttpServlet {
             if (session == null &&
                     !"logout".equalsIgnoreCase(action)) {
 
-                String module1LogoutUrl =
-                        getServletContext()
-                                .getInitParameter(
-                                        "module1LogoutUrl");
-
-                if (module1LogoutUrl == null ||
-                        module1LogoutUrl.trim().isEmpty()) {
-
-                    module1LogoutUrl =
-                            "http://localhost:8081/"
-                            + "NLogisticsImportExport/"
-                            + "app?action=logout";
-                }
+                /*
+                 * The Module 3 session has expired. Send the browser
+                 * back through Module 1 with a signed one-time token
+                 * so any remaining Module 1 session is also cleared.
+                 */
 
                 response.sendRedirect(
-                        module1LogoutUrl);
+                        buildModule1LogoutUrl(null));
 
                 return;
             }
@@ -106,44 +107,66 @@ public class Module3FrontController extends HttpServlet {
 
             if ("logout".equalsIgnoreCase(action)) {
 
-                if (session != null) {
+                /*
+                 * With no Module 3 session there is nothing left to
+                 * protect, so the request is forwarded to Module 1
+                 * with a signed token. This preserves the old
+                 * "expired session still logs out" behaviour.
+                 */
 
-                    if ("POST".equalsIgnoreCase(
-                            request.getMethod())) {
+                if (session == null) {
 
-                        Module3Authorization.requireCsrf(
-                                request);
-                    }
+                    response.sendRedirect(
+                            buildModule1LogoutUrl(null));
 
-                    try {
-
-                        session.invalidate();
-
-                    } catch (IllegalStateException ignored) {
-
-                        // Session already invalidated.
-                    }
+                    return;
                 }
 
 
-                String module1LogoutUrl =
-                        getServletContext()
-                                .getInitParameter(
-                                        "module1LogoutUrl");
+                /*
+                 * A live session must be ended with POST + CSRF.
+                 * A plain GET link can no longer log the user out.
+                 */
+
+                if (!"POST".equalsIgnoreCase(
+                        request.getMethod())) {
+
+                    response.sendError(
+                            HttpServletResponse.SC_METHOD_NOT_ALLOWED,
+                            "Logout requires a POST request.");
+
+                    return;
+                }
 
 
-                if (module1LogoutUrl == null ||
-                        module1LogoutUrl.trim().isEmpty()) {
+                Module3Authorization.requireCsrf(
+                        request);
 
-                    module1LogoutUrl =
-                            "http://localhost:8081/"
-                            + "NLogisticsImportExport/"
-                            + "app?action=logout";
+
+                Integer logoutUserId = null;
+
+                Object userIdValue =
+                        session.getAttribute("userId");
+
+                if (userIdValue instanceof Integer) {
+
+                    logoutUserId =
+                            (Integer) userIdValue;
+                }
+
+
+                try {
+
+                    session.invalidate();
+
+                } catch (IllegalStateException ignored) {
+
+                    // Session already invalidated.
                 }
 
 
                 response.sendRedirect(
-                        module1LogoutUrl);
+                        buildModule1LogoutUrl(logoutUserId));
 
                 return;
             }
@@ -501,5 +524,159 @@ public class Module3FrontController extends HttpServlet {
                     HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "An internal error occurred.");
         }
+    }
+
+
+    /*
+     * ============================================================
+     * BUILD MODULE 1 LOGOUT REDIRECT
+     * ============================================================
+     *
+     * Module 1 now requires a POST + CSRF for its own logout form,
+     * but it also accepts a signed one-time token on GET. That is
+     * what keeps cross-module logout working.
+     */
+
+    private String buildModule1LogoutUrl(
+            Integer userId)
+            throws IOException {
+
+        String url =
+                getServletContext()
+                        .getInitParameter(
+                                "module1LogoutUrl");
+
+        if (url == null ||
+                url.trim().isEmpty()) {
+
+            url =
+                    "http://localhost:8081/"
+                    + "NLogisticsImportExport/"
+                    + "app?action=logout";
+        }
+
+
+        String token;
+
+        try {
+
+            token = createLogoutToken(userId);
+
+        } catch (SecurityException e) {
+
+            throw e;
+
+        } catch (Exception e) {
+
+            throw new IOException(
+                    "Unable to create logout token.",
+                    e);
+        }
+
+
+        return url
+                + (url.indexOf('?') >= 0 ? "&" : "?")
+                + "logoutToken="
+                + URLEncoder.encode(token, "UTF-8");
+    }
+
+
+    /*
+     * ============================================================
+     * CREATE CROSS-MODULE LOGOUT TOKEN
+     * ============================================================
+     *
+     * Format: base64url(userId|issuedAt|nonce).signature
+     */
+
+    private String createLogoutToken(
+            Integer userId)
+            throws Exception {
+
+        long issuedAt =
+                System.currentTimeMillis();
+
+
+        byte[] nonceBytes =
+                new byte[16];
+
+        RANDOM.nextBytes(nonceBytes);
+
+        String nonce =
+                Base64.getUrlEncoder()
+                        .withoutPadding()
+                        .encodeToString(nonceBytes);
+
+
+        String payload =
+                (userId == null
+                        ? "0"
+                        : String.valueOf(userId))
+                + "|"
+                + issuedAt
+                + "|"
+                + nonce;
+
+
+        String encodedPayload =
+                Base64.getUrlEncoder()
+                        .withoutPadding()
+                        .encodeToString(
+                                payload.getBytes(
+                                        StandardCharsets.UTF_8));
+
+
+        return encodedPayload
+                + "."
+                + createSignature(encodedPayload);
+    }
+
+
+    private String createSignature(
+            String payload)
+            throws Exception {
+
+        String sharedSecret =
+                System.getenv("NLOGISTICS_SSO_SECRET");
+
+        if (sharedSecret == null ||
+                sharedSecret.trim().isEmpty()) {
+
+            sharedSecret =
+                    getServletContext()
+                            .getInitParameter(
+                                    "module3SharedSecret");
+        }
+
+
+        if (sharedSecret == null ||
+                sharedSecret.trim().isEmpty()) {
+
+            throw new SecurityException(
+                    "SSO shared secret is not configured.");
+        }
+
+
+        Mac mac =
+                Mac.getInstance("HmacSHA256");
+
+        SecretKeySpec key =
+                new SecretKeySpec(
+                        sharedSecret.getBytes(
+                                StandardCharsets.UTF_8),
+                        "HmacSHA256");
+
+        mac.init(key);
+
+
+        byte[] signature =
+                mac.doFinal(
+                        payload.getBytes(
+                                StandardCharsets.UTF_8));
+
+
+        return Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString(signature);
     }
 }

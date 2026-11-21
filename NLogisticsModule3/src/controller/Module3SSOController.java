@@ -3,6 +3,11 @@ package controller;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
+import java.sql.Timestamp;
 import java.util.Base64;
 
 import javax.crypto.Mac;
@@ -13,6 +18,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+
+import db_config.GetConnection;
 
 @WebServlet("/module3-sso")
 public class Module3SSOController extends HttpServlet {
@@ -368,6 +375,25 @@ public class Module3SSOController extends HttpServlet {
 
             /*
              * ====================================================
+             * 11b. CONSUME NONCE (ONE-TIME TOKEN USE)
+             * ====================================================
+             *
+             * The nonce is only consumed after the signature and
+             * expiry checks pass, so a forged or expired token
+             * cannot burn a legitimate nonce.
+             *
+             * The primary key on sso_nonce makes this atomic: a
+             * second use of the same token fails with a duplicate
+             * key error and is rejected as a replay.
+             */
+
+            consumeNonce(
+                    nonce.trim(),
+                    issuedAt + TOKEN_VALIDITY_MILLIS);
+
+
+            /*
+             * ====================================================
              * 12. NORMALIZE AND VALIDATE ROLE
              * ====================================================
              *
@@ -562,6 +588,135 @@ public class Module3SSOController extends HttpServlet {
                 .withoutPadding()
                 .encodeToString(
                         signature);
+    }
+
+
+    /*
+     * ============================================================
+     * CONSUME NONCE
+     * ============================================================
+     *
+     * Persists the nonce so the same SSO token cannot be accepted
+     * twice. The nonce row is kept until the token itself expires,
+     * then removed opportunistically on a later login.
+     */
+
+    private void consumeNonce(
+            String nonce,
+            long expiresAtMillis) {
+
+        Connection con = null;
+        PreparedStatement cleanup = null;
+        PreparedStatement insert = null;
+
+        try {
+
+            con =
+                    GetConnection.getConnection();
+
+            if (con == null) {
+
+                throw new SecurityException(
+                        "Unable to verify SSO token replay protection.");
+            }
+
+
+            cleanup =
+                    con.prepareStatement(
+                            "DELETE FROM sso_nonce "
+                            + "WHERE expires_at < NOW()");
+
+            cleanup.executeUpdate();
+
+
+            insert =
+                    con.prepareStatement(
+                            "INSERT INTO sso_nonce "
+                            + "(nonce, expires_at) "
+                            + "VALUES (?, ?)");
+
+            insert.setString(
+                    1,
+                    nonce);
+
+            insert.setTimestamp(
+                    2,
+                    new Timestamp(
+                            expiresAtMillis));
+
+            insert.executeUpdate();
+
+
+        } catch (SQLIntegrityConstraintViolationException e) {
+
+            /*
+             * Duplicate primary key = the nonce was already used.
+             */
+            throw new SecurityException(
+                    "SSO token has already been used.");
+
+
+        } catch (SQLException e) {
+
+            /*
+             * Some drivers report a duplicate key as a generic
+             * SQLException with SQLState 23000 rather than the
+             * integrity-constraint subclass.
+             */
+            if ("23000".equals(e.getSQLState())) {
+
+                throw new SecurityException(
+                        "SSO token has already been used.");
+            }
+
+            /*
+             * Fail closed. If replay protection cannot be
+             * recorded, the token must not be trusted.
+             */
+            throw new SecurityException(
+                    "Unable to verify SSO token replay protection.");
+
+
+        } finally {
+
+            close(insert);
+            close(cleanup);
+            close(con);
+        }
+    }
+
+
+    private void close(
+            PreparedStatement ps) {
+
+        if (ps != null) {
+
+            try {
+
+                ps.close();
+
+            } catch (SQLException e) {
+
+                // Ignore closing error.
+            }
+        }
+    }
+
+
+    private void close(
+            Connection con) {
+
+        if (con != null) {
+
+            try {
+
+                con.close();
+
+            } catch (SQLException e) {
+
+                // Ignore closing error.
+            }
+        }
     }
 
 

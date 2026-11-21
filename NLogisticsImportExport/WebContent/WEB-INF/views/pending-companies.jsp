@@ -803,7 +803,7 @@ body {
                             <td>
 
                                 <span class="company-name">
-                                    <%=c.getCompanyName()%>
+                                    <%=controller.Html.escape(c.getCompanyName())%>
                                 </span>
 
                             </td>
@@ -814,7 +814,7 @@ body {
                             <td>
 
                                 <span class="company-code">
-                                    <%=c.getLicenseNo()%>
+                                    <%=controller.Html.escape(c.getLicenseNo())%>
                                 </span>
 
                             </td>
@@ -825,7 +825,7 @@ body {
                             <td>
 
                                 <span class="company-code">
-                                    <%=c.getGstNo()%>
+                                    <%=controller.Html.escape(c.getGstNo())%>
                                 </span>
 
                             </td>
@@ -850,7 +850,7 @@ body {
                                 <% } else { %>
 
                                     <span class="status-badge status-other">
-                                        <%=c.getApprovalStatus()%>
+                                        <%=controller.Html.escape(c.getApprovalStatus())%>
                                     </span>
 
                                 <% } %>

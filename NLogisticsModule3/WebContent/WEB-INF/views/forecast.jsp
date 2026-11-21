@@ -1496,7 +1496,7 @@
         <!-- LOGOUT BUTTON -->
 
         <form
-            method="get"
+            method="post"
             action="<%= request.getContextPath() %>/app"
             class="m-0">
 
@@ -1504,6 +1504,11 @@
                 type="hidden"
                 name="action"
                 value="logout">
+
+            <input
+                type="hidden"
+                name="csrfToken"
+                value="<%= controller.Csrf.ensureToken(request) %>">
 
             <button
                 type="submit"

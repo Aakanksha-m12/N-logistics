@@ -568,17 +568,17 @@ body {
 
                             <td>
                                 <strong>
-                                    <%=a.getUsername()%>
+                                    <%=controller.Html.escape(a.getUsername())%>
                                 </strong>
                             </td>
 
                             <td>
-                                <%=a.getAction()%>
+                                <%=controller.Html.escape(a.getAction())%>
                             </td>
 
                             <td>
 
-                                <%=a.getEntityName()%>
+                                <%=controller.Html.escape(a.getEntityName())%>
 
                                 <span class="audit-id">
                                     #<%=a.getEntityId()%>
@@ -587,15 +587,15 @@ body {
                             </td>
 
                             <td>
-                                <%=a.getOldValue()%>
+                                <%=controller.Html.escape(a.getOldValue())%>
                             </td>
 
                             <td>
-                                <%=a.getNewValue()%>
+                                <%=controller.Html.escape(a.getNewValue())%>
                             </td>
 
                             <td class="audit-ip">
-                                <%=a.getIpAddress()%>
+                                <%=controller.Html.escape(a.getIpAddress())%>
                             </td>
 
                         </tr>

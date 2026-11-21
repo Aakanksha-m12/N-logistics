@@ -228,86 +228,8 @@ public class PricingAudit_Operations_Implementor
 
             while (rs.next()) {
 
-                PricingAudit audit =
-                        new PricingAudit();
-
-
-                audit.setAuditId(
-                        rs.getLong(
-                                "audit_id"));
-
-
-                audit.setPricingId(
-                        rs.getLong(
-                                "pricing_id"));
-
-
-                /*
-                 * Old price.
-                 */
-                double oldPrice =
-                        rs.getDouble(
-                                "old_price");
-
-
-                if (rs.wasNull()) {
-
-                    audit.setOldPrice(
-                            null);
-
-                } else {
-
-                    audit.setOldPrice(
-                            oldPrice);
-                }
-
-
-                /*
-                 * New price.
-                 */
-                double newPrice =
-                        rs.getDouble(
-                                "new_price");
-
-
-                if (rs.wasNull()) {
-
-                    audit.setNewPrice(
-                            null);
-
-                } else {
-
-                    audit.setNewPrice(
-                            newPrice);
-                }
-
-
-                /*
-                 * User who changed the price.
-                 */
-                audit.setChangedBy(
-                        rs.getLong(
-                                "changed_by"));
-
-
-                /*
-                 * Reason.
-                 */
-                audit.setReason(
-                        rs.getString(
-                                "reason"));
-
-
-                /*
-                 * Database-generated timestamp.
-                 */
-                audit.setChangedAt(
-                        rs.getTimestamp(
-                                "changed_at"));
-
-
                 list.add(
-                        audit);
+                        mapAudit(rs));
             }
 
 
@@ -335,38 +257,192 @@ public class PricingAudit_Operations_Implementor
      * SHOW AUDITS BY COMPANY
      * ============================================================
      *
-     * IMPORTANT:
+     * pricing_audit has no company_id column, so company ownership
+     * is derived from the user who changed the price:
      *
-     * pricing_audit itself does not contain
-     * owner_company_id.
+     *     pricing_audit.changed_by -> users.user_id -> users.company_id
      *
-     * Therefore we cannot safely claim that:
-     *
-     *     WHERE owner_company_id = ?
-     *
-     * exists.
-     *
-     * We do NOT invent a database column.
+     * This is the authoritative server-side relationship. The
+     * company ID must come from the authenticated session, never
+     * from the browser.
      */
 
     @Override
     public List<PricingAudit> showByCompany(
             Long companyId) {
 
+        List<PricingAudit> list =
+                new ArrayList<PricingAudit>();
+
+
         if (companyId == null) {
 
-            return new ArrayList<PricingAudit>();
+            return list;
+        }
+
+
+        String sql =
+                "SELECT pa.audit_id, "
+                + "pa.pricing_id, "
+                + "pa.old_price, "
+                + "pa.new_price, "
+                + "pa.changed_by, "
+                + "pa.reason, "
+                + "pa.changed_at "
+                + "FROM pricing_audit pa "
+                + "INNER JOIN users u "
+                + "ON u.user_id = pa.changed_by "
+                + "WHERE u.company_id = ? "
+                + "ORDER BY pa.audit_id DESC";
+
+
+        Connection con = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
+
+        try {
+
+            con =
+                    GetConnection.getConnection();
+
+
+            if (con == null) {
+
+                throw new RuntimeException(
+                        "Database connection failed.");
+            }
+
+
+            ps =
+                    con.prepareStatement(
+                            sql);
+
+
+            ps.setLong(
+                    1,
+                    companyId.longValue());
+
+
+            rs =
+                    ps.executeQuery();
+
+
+            while (rs.next()) {
+
+                list.add(
+                        mapAudit(rs));
+            }
+
+
+        } catch (Exception e) {
+
+            throw new RuntimeException(
+                    "Error while displaying company pricing audit.",
+                    e);
+
+
+        } finally {
+
+            close(rs);
+            close(ps);
+            close(con);
+        }
+
+
+        return list;
+    }
+
+
+    /*
+     * ============================================================
+     * MAP DATABASE ROW TO MODEL
+     * ============================================================
+     */
+
+    private PricingAudit mapAudit(
+            ResultSet rs)
+            throws Exception {
+
+        PricingAudit audit =
+                new PricingAudit();
+
+
+        audit.setAuditId(
+                rs.getLong(
+                        "audit_id"));
+
+
+        audit.setPricingId(
+                rs.getLong(
+                        "pricing_id"));
+
+
+        /*
+         * Old price.
+         */
+        double oldPrice =
+                rs.getDouble(
+                        "old_price");
+
+
+        if (rs.wasNull()) {
+
+            audit.setOldPrice(
+                    null);
+
+        } else {
+
+            audit.setOldPrice(
+                    oldPrice);
         }
 
 
         /*
-         * No valid company relationship exists directly
-         * in pricing_audit.
-         *
-         * Therefore this method is not used to claim
-         * company-level isolation.
+         * New price.
          */
-        return showAll();
+        double newPrice =
+                rs.getDouble(
+                        "new_price");
+
+
+        if (rs.wasNull()) {
+
+            audit.setNewPrice(
+                    null);
+
+        } else {
+
+            audit.setNewPrice(
+                    newPrice);
+        }
+
+
+        /*
+         * User who changed the price.
+         */
+        audit.setChangedBy(
+                rs.getLong(
+                        "changed_by"));
+
+
+        /*
+         * Reason.
+         */
+        audit.setReason(
+                rs.getString(
+                        "reason"));
+
+
+        /*
+         * Database-generated timestamp.
+         */
+        audit.setChangedAt(
+                rs.getTimestamp(
+                        "changed_at"));
+
+
+        return audit;
     }
 
 

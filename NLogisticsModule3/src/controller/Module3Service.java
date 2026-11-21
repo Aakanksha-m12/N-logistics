@@ -679,6 +679,33 @@ public class Module3Service {
 
     /*
      * ============================================================
+     * PRICING AUDIT - VIEW BY COMPANY
+     * ============================================================
+     *
+     * Used for Company Admin and Finance Staff. The company ID is
+     * supplied by the controller from the authenticated session,
+     * never from the browser.
+     */
+
+    public List<PricingAudit> getPricingAuditsByCompany(
+            Integer userId,
+            Long companyId) {
+
+        requireUser(userId);
+
+        if (companyId == null) {
+
+            throw new IllegalArgumentException(
+                    "Company context is required.");
+        }
+
+        return pricingAuditImplementor.showByCompany(
+                companyId);
+    }
+
+
+    /*
+     * ============================================================
      * DEMAND FORECAST - ADD
      * ============================================================
      */

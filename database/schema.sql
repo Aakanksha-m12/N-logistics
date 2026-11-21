@@ -249,10 +249,65 @@ BEGIN
         SET MESSAGE_TEXT = 'Invalid pricing values.';
     END IF;
 
+    /*
+     * The Java pricing layer calculates:
+     *
+     *   base * seasonal * demand + surcharge
+     *
+     * The surcharge is deployment configuration supplied through the
+     * MySQL session variable @pricing_surcharge. It is never a column,
+     * so COALESCE keeps direct SQL inserts (where the variable is not
+     * set) working with the historical zero-surcharge formula.
+     */
     IF ROUND(
         NEW.base_price
         * NEW.seasonal_multiplier
-        * NEW.demand_multiplier,
+        * NEW.demand_multiplier
+        + COALESCE(@pricing_surcharge, 0),
+        2
+    ) <> NEW.final_price
+    THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT =
+        'Final price does not match the pricing formula.';
+    END IF;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ZERO_IN_DATE,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER validate_pricing_final_price_update
+BEFORE UPDATE ON pricing_rules
+FOR EACH ROW
+BEGIN
+    IF NEW.base_price < 0
+       OR NEW.seasonal_multiplier <= 0
+       OR NEW.demand_multiplier <= 0
+       OR NEW.final_price < 0
+    THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid pricing values.';
+    END IF;
+
+    /*
+     * Keep UPDATE consistent with INSERT and with the Java
+     * calculatePrice() helper.
+     */
+    IF ROUND(
+        NEW.base_price
+        * NEW.seasonal_multiplier
+        * NEW.demand_multiplier
+        + COALESCE(@pricing_surcharge, 0),
         2
     ) <> NEW.final_price
     THEN
@@ -315,6 +370,26 @@ CREATE TABLE `users` (
   CONSTRAINT `chk_failed_login_count` CHECK (`failed_login_count` >= 0),
   CONSTRAINT `chk_user_email` CHECK (`email` regexp '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$')
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `sso_nonce`
+--
+-- One-time nonce store used by Module 3 to reject replayed SSO
+-- tokens. A nonce is inserted when a token is accepted; the primary
+-- key makes a second use of the same token fail atomically.
+--
+
+DROP TABLE IF EXISTS `sso_nonce`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `sso_nonce` (
+  `nonce` varchar(128) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `consumed_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`nonce`),
+  KEY `idx_sso_nonce_expiry` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -394,6 +469,246 @@ DELIMITER ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ZERO_IN_DATE,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION' */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `show_pricing_rules` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ZERO_IN_DATE,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `show_pricing_rules`()
+BEGIN
+    /*
+     * Customer-facing price list.
+     *
+     * Only rules that are currently in force are returned, so a
+     * customer never sees an expired or not-yet-active price.
+     *
+     * This procedure is called by
+     * Container_Operations_Implementor.getCustomerPricing().
+     */
+    SELECT
+        container_type,
+        container_size,
+        route_id,
+        final_price,
+        valid_from,
+        valid_to
+    FROM pricing_rules
+    WHERE valid_from <= CURDATE()
+      AND valid_to >= CURDATE()
+    ORDER BY container_type ASC,
+             container_size ASC,
+             route_id ASC;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `generate_demand_forecast` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ZERO_IN_DATE,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `generate_demand_forecast`(
+    IN p_container_type VARCHAR(20),
+    IN p_route_id BIGINT,
+    IN p_forecast_period DATE
+)
+BEGIN
+    /*
+     * The Java layer supplies the algorithm output through MySQL
+     * session variables on the SAME connection:
+     *
+     *   @forecasted_demand
+     *   @demand_multiplier
+     *   @algorithm_version
+     *   @pricing_surcharge
+     *
+     * The procedure validates them, prices the forecast against the
+     * currently active pricing rule, stores/updates the forecast and
+     * returns the stored row.
+     */
+
+    DECLARE v_demand INT DEFAULT NULL;
+    DECLARE v_multiplier DECIMAL(10,4) DEFAULT NULL;
+    DECLARE v_version VARCHAR(50) DEFAULT NULL;
+    DECLARE v_surcharge DECIMAL(12,2) DEFAULT 0.00;
+    DECLARE v_base_price DECIMAL(12,2) DEFAULT NULL;
+    DECLARE v_seasonal DECIMAL(10,4) DEFAULT NULL;
+    DECLARE v_price DECIMAL(12,2) DEFAULT NULL;
+
+
+    IF p_container_type IS NULL
+       OR TRIM(p_container_type) = '' THEN
+
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Container type is required.';
+
+    END IF;
+
+
+    IF p_container_type NOT IN
+       ('Dry','Reefer','Open Top','Flat Rack','Tank') THEN
+
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid container type.';
+
+    END IF;
+
+
+    IF p_route_id IS NULL
+       OR p_route_id <= 0 THEN
+
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Route ID must be positive.';
+
+    END IF;
+
+
+    IF p_forecast_period IS NULL THEN
+
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Forecast period is required.';
+
+    END IF;
+
+
+    IF p_forecast_period <= CURDATE() THEN
+
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Forecast period must be a future date.';
+
+    END IF;
+
+
+    SET v_demand     = @forecasted_demand;
+    SET v_multiplier = @demand_multiplier;
+    SET v_version    = @algorithm_version;
+    SET v_surcharge  = COALESCE(@pricing_surcharge, 0.00);
+
+
+    IF v_demand IS NULL
+       OR v_demand < 0 THEN
+
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT =
+        'Forecasted demand is required and cannot be negative.';
+
+    END IF;
+
+
+    IF v_multiplier IS NULL
+       OR v_multiplier <= 0 THEN
+
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT =
+        'Demand multiplier must be greater than zero.';
+
+    END IF;
+
+
+    IF v_version IS NULL
+       OR TRIM(v_version) = '' THEN
+
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Algorithm version is required.';
+
+    END IF;
+
+
+    /*
+     * Price the forecast using the active pricing rule for the
+     * requested container type and route. The formula matches
+     * PricingRule_Operations_Implementor.calculatePrice():
+     *
+     *   base * seasonal * demand + surcharge
+     */
+    SELECT
+        base_price,
+        seasonal_multiplier
+    INTO
+        v_base_price,
+        v_seasonal
+    FROM pricing_rules
+    WHERE container_type = p_container_type
+      AND route_id = p_route_id
+      AND valid_from <= CURDATE()
+      AND valid_to >= CURDATE()
+    ORDER BY valid_from DESC,
+             pricing_id DESC
+    LIMIT 1;
+
+
+    IF v_base_price IS NULL THEN
+
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT =
+        'No active pricing rule exists for this container type and route.';
+
+    END IF;
+
+
+    SET v_price = ROUND(
+        v_base_price
+        * v_seasonal
+        * v_multiplier
+        + v_surcharge,
+        2
+    );
+
+
+    INSERT INTO demand_forecast
+        (container_type,
+         route_id,
+         forecast_period,
+         forecasted_demand,
+         forecasted_price,
+         algorithm_version)
+    VALUES
+        (p_container_type,
+         p_route_id,
+         p_forecast_period,
+         v_demand,
+         v_price,
+         TRIM(v_version))
+    ON DUPLICATE KEY UPDATE
+        forecasted_demand = VALUES(forecasted_demand),
+        forecasted_price  = VALUES(forecasted_price),
+        algorithm_version = VALUES(algorithm_version),
+        generated_at      = CURRENT_TIMESTAMP;
+
+
+    SELECT
+        forecast_id,
+        container_type,
+        route_id,
+        forecast_period,
+        forecasted_demand,
+        forecasted_price,
+        algorithm_version,
+        generated_at,
+        'Demand forecast generated successfully.' AS message
+    FROM demand_forecast
+    WHERE container_type = p_container_type
+      AND route_id = p_route_id
+      AND forecast_period = p_forecast_period;
+
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 /*!50003 DROP PROCEDURE IF EXISTS `sp_approve_company` */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
